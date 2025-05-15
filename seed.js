@@ -1,6 +1,7 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
 const { ObjectId } = mongoose.Types;
+const axios = require('axios');
 
 // MongoDB Connection
 console.log('Connecting to MongoDB...');
@@ -103,14 +104,26 @@ const seedDatabase = async () => {
     console.log('Existing cards cleared');
     
     // Generate and insert new cards
-    const cardsToInsert = unsplashImages.map((image, index) => ({
-      name: `Card ${index + 1} - ${image.category}`,
-      imageUrl: image.url,
-      link: `https://unsplash.com/s/photos/${image.category.toLowerCase()}`,
-      createdAt: Date.now() - Math.floor(Math.random() * 30 * 24 * 60 * 60 * 1000) // Random date within last 30 days
+    const cardsToInsert = await Promise.all(unsplashImages.map(async (image, index) => {
+      try {
+        const response = await axios.get(image.url, { responseType: 'arraybuffer' });
+        const base64Image = Buffer.from(response.data, 'binary').toString('base64');
+        return {
+          name: `Card ${index + 1} - ${image.category}`,
+          imageUrl: `data:image/jpeg;base64,${base64Image}`, // Store as base64
+          link: `https://unsplash.com/s/photos/${image.category.toLowerCase()}`,
+          createdAt: Date.now() - Math.floor(Math.random() * 30 * 24 * 60 * 60 * 1000) // Random date within last 30 days
+        };
+      } catch (error) {
+        console.error(`Error fetching image for ${image.category}:`, error.message);
+        return null; // Return null for failed requests
+      }
     }));
     
-    const result = await Card.insertMany(cardsToInsert);
+    // Filter out any null values from failed requests
+    const validCards = cardsToInsert.filter(card => card !== null);
+    
+    const result = await Card.insertMany(validCards);
     
     console.log(`Successfully seeded database with ${result.length} cards`);
     console.log('Sample card:', result[0]);
