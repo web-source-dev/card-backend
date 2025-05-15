@@ -13,7 +13,7 @@ app.use(bodyParser.json({ limit: '10mb' })); // Increased limit for image data
 app.use(express.json());
 
 // MongoDB Connection
-mongoose.connect('mongodb://localhost:27017/cardShuffler')
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/cardShuffler')
   .then(() => console.log('MongoDB connected successfully'))
   .catch(err => console.error('MongoDB connection error:', err));
 
