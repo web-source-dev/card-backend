@@ -13,7 +13,19 @@ app.use(bodyParser.json({ limit: '10mb' })); // Increased limit for image data
 app.use(express.json());
 
 // MongoDB Connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/cardShuffler')
+// Increase buffer timeout and add connection options for reliability
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/cardShuffler', {
+  bufferCommands: true, // Enable command buffering
+  bufferTimeoutMS: 30000, // Increase timeout to 30 seconds
+  connectTimeoutMS: 30000, // Connection timeout
+  socketTimeoutMS: 45000, // Socket timeout
+  family: 4, // Use IPv4, skip trying IPv6
+  maxPoolSize: 10, // Maintain up to 10 socket connections
+  serverSelectionTimeoutMS: 30000, // Timeout for server selection
+  heartbeatFrequencyMS: 10000, // Check server status every 10 seconds
+  retryWrites: true,
+  w: 'majority'
+})
   .then(() => console.log('MongoDB connected successfully'))
   .catch(err => console.error('MongoDB connection error:', err));
 
